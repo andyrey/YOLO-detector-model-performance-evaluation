@@ -10,6 +10,7 @@ CLASSES = ['car', 'plate_number', 'headlight', 'broken_headlight', 'wheel',
 CLASSES_NUMBER = len(CLASSES)         
 IOU_THRESHOLD = 0.3
 model_name = "YOLOv4custom"
+
 def dir_walk(dir_path):
     '''
     reads all txt files in the dir and forms a list of their names
@@ -202,14 +203,6 @@ def process_1_files_pair(files_pair):  # gt + detection files 1 pair tuple
         # end of zero loop************************************************************************************************************
     return (fp, fn, tp, current_classes)
 
-#def generalize_statistics(current_recall, current)
-
-def print_result(file):
-    pass
-
-    # det_file = files_pair[1]
-
-
 cwd = getcwd()
 fnl = dir_walk(cwd)
 file_pair_list = joint_gt_detec_pairs(fnl)
@@ -217,9 +210,6 @@ file_pair_list = joint_gt_detec_pairs(fnl)
 class_count = [0]*CLASSES_NUMBER
 Recall_mean = [0]*CLASSES_NUMBER
 Precision_mean = [0]*CLASSES_NUMBER
-#FP =[None]*CLASSES_NUMBER
-#print(type(file_pair_list))
-
 now = datetime.now()
 dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
 print("date and time =", dt_string)	
@@ -232,7 +222,6 @@ for file_pair in file_pair_list:
     df_empty_string = pd.DataFrame(columns=["","","","","",""])
     df_file_name_string = pd.DataFrame(columns=["File ", file_pair[1],"","","",""])
     df_perform_params_framely = pd.DataFrame(columns= cols)
-    
     FP, FN, TP, classes_here = process_1_files_pair(file_pair)
     Recall, Precision = calc_performance(FP, FN, TP, classes_here)
       
@@ -254,10 +243,10 @@ sPrecision_mean = ['None' if class_count[i] <=1 else str(round(r,3)) for i, r in
 
 #now form resulting csv file
 
+#I stayed this if there is need to print as txt:
 #fr.write(f"\n              0       1      2     3     4      5      6     7     8     9\n")
 #fr.write(f"Recall_mean   {sRecall_mean[0]} {sRecall_mean[1]} {sRecall_mean[2]} {sRecall_mean[3]} {sRecall_mean[4]} \
 #{sRecall_mean[5]} {sRecall_mean[6]} {sRecall_mean[7]} {sRecall_mean[8]} {sRecall_mean[9]} \n")
-
 df_headline_result_file = pd.DataFrame(columns=["Model", str(CLASSES_NUMBER)+" classes",model_name,dt_string,"","",""])
 df_performance_params_result_file =  pd.DataFrame(columns=[CLASSES[i] for i in range(CLASSES_NUMBER) ])#[CLASSES[0],CLASSES[1],CLASSES[2],CLASSES[3],CLASSES[4],CLASSES[5],CLASSES[6],CLASSES[7],CLASSES[8],CLASSES[9]])
 df_performance_params_result_file.loc["Recall mean"]= pd.Series({ CLASSES[i]:sRecall_mean[i] for i in range(CLASSES_NUMBER) })
