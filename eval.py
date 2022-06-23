@@ -228,7 +228,8 @@ for file_pair in file_pair_list:
     for j in range(CLASSES_NUMBER):
         if str(j) in classes_here:
             Recall_mean[j] = (Recall_mean[j]*class_count[j] + Recall[j])/(class_count[j]+1)
-            Precision_mean[j] = (Precision_mean[j]*class_count[j] + Precision[j])/(class_count[j]+1)
+            if Recall[j] !=0: # precision is undefined when recall ==0
+                Precision_mean[j] = (Precision_mean[j]*class_count[j] + Precision[j])/(class_count[j]+1)
             class_count[j] += 1
       
     for cl in classes_here:
