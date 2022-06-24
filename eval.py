@@ -2,14 +2,14 @@ import os
 import pandas as pd
 from os import walk, getcwd
 from datetime import datetime
+
 end_diff = '_gt'
 file_end = 'txt'
-
-CLASSES = ['car', 'plate_number', 'headlight', 'broken_headlight', 'wheel',
+CLASSES = ['car', 'plate_number', 'headlight', 'broken_headlight', 'wheel',\
            'flat_tire', 'door', 'windshield', 'doorknob', 'rearlight']
 CLASSES_NUMBER = len(CLASSES)         
 IOU_THRESHOLD = 0.3
-model_name = "YOLOv4custom"
+model_name = "YOLOv4-tiny"
 
 def dir_walk(dir_path):
     '''
@@ -122,9 +122,13 @@ def calc_performance(fp, fn, tp, classes_involed):
     #    if str(i) not in classes_involed:
     #        continue
   
-        if tp[i] == 0:
+        if tp[i] == 0:# no real objects found
             recall[i] = 0
             precision[i] = 0
+            if fp[i] == 0:#  no objects found by error
+            	precision[i] = None # non-defined
+            if fn[i] == 0:# no objects missed (empty frame)
+                recall[i] = None
         else:
             recall[i] = tp[i]/(tp[i] + fn[i])
             precision[i] = tp[i]/(tp[i] + fp[i])
@@ -203,13 +207,26 @@ def process_1_files_pair(files_pair):  # gt + detection files 1 pair tuple
         # end of zero loop************************************************************************************************************
     return (fp, fn, tp, current_classes)
 
+#def generalize_statistics(current_recall, current)
+
+def print_result(file):
+    pass
+
+    # det_file = files_pair[1]
+
+
 cwd = getcwd()
 fnl = dir_walk(cwd)
 file_pair_list = joint_gt_detec_pairs(fnl)
 #i = 0
-class_count = [0]*CLASSES_NUMBER
+#class_count = [0]*CLASSES_NUMBER
+class_count_precision = [0]*CLASSES_NUMBER
+class_count_recall = [0]*CLASSES_NUMBER
 Recall_mean = [0]*CLASSES_NUMBER
 Precision_mean = [0]*CLASSES_NUMBER
+#FP =[None]*CLASSES_NUMBER
+#print(type(file_pair_list))
+
 now = datetime.now()
 dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
 print("date and time =", dt_string)	
@@ -222,15 +239,18 @@ for file_pair in file_pair_list:
     df_empty_string = pd.DataFrame(columns=["","","","","",""])
     df_file_name_string = pd.DataFrame(columns=["File ", file_pair[1],"","","",""])
     df_perform_params_framely = pd.DataFrame(columns= cols)
+    
     FP, FN, TP, classes_here = process_1_files_pair(file_pair)
     Recall, Precision = calc_performance(FP, FN, TP, classes_here)
       
     for j in range(CLASSES_NUMBER):
         if str(j) in classes_here:
-            Recall_mean[j] = (Recall_mean[j]*class_count[j] + Recall[j])/(class_count[j]+1)
-            if Recall[j] !=0: # precision is undefined when recall ==0
-                Precision_mean[j] = (Precision_mean[j]*class_count[j] + Precision[j])/(class_count[j]+1)
-            class_count[j] += 1
+            if Recall[j] is not None:
+                Recall_mean[j] = (Recall_mean[j]*class_count_recall[j] + Recall[j])/(class_count_recall[j]+1)
+                class_count_recall[j] += 1
+            if Precision[j] is not None:
+                Precision_mean[j] = (Precision_mean[j]*class_count_precision[j] + Precision[j])/(class_count_precision[j]+1)
+                class_count_precision[j] += 1
       
     for cl in classes_here:
         #fr.write(f"  {cl}     {FP[int(cl)]}    {FN[int(cl)]}      {TP[int(cl)]}     {Recall[int(cl)]:.3f}      {Precision[int(cl)]:.3f}\n")
@@ -239,29 +259,18 @@ for file_pair in file_pair_list:
     df_file_name_string.to_csv('out_framely.csv', mode = 'a')
     df_perform_params_framely.to_csv('out_framely.csv', mode = 'a')
 #End of output file:
-sRecall_mean = ['None' if class_count[i] <=1 else str(round(r,3)) for i, r in enumerate(Recall_mean)  ]
-sPrecision_mean = ['None' if class_count[i] <=1 else str(round(r,3)) for i, r in enumerate(Precision_mean)  ]
+sRecall_mean = ['None' if class_count_recall[i] <=1 else str(round(r,3)) for i, r in enumerate(Recall_mean)  ]
+sPrecision_mean = ['None' if class_count_precision[i] <=1 else str(round(r,3)) for i, r in enumerate(Precision_mean)  ]
 
 #now form resulting csv file
 
-#I stayed this if there is need to print as txt:
 #fr.write(f"\n              0       1      2     3     4      5      6     7     8     9\n")
 #fr.write(f"Recall_mean   {sRecall_mean[0]} {sRecall_mean[1]} {sRecall_mean[2]} {sRecall_mean[3]} {sRecall_mean[4]} \
 #{sRecall_mean[5]} {sRecall_mean[6]} {sRecall_mean[7]} {sRecall_mean[8]} {sRecall_mean[9]} \n")
+
 df_headline_result_file = pd.DataFrame(columns=["Model", str(CLASSES_NUMBER)+" classes",model_name,dt_string,"","",""])
 df_performance_params_result_file =  pd.DataFrame(columns=[CLASSES[i] for i in range(CLASSES_NUMBER) ])#[CLASSES[0],CLASSES[1],CLASSES[2],CLASSES[3],CLASSES[4],CLASSES[5],CLASSES[6],CLASSES[7],CLASSES[8],CLASSES[9]])
 df_performance_params_result_file.loc["Recall mean"]= pd.Series({ CLASSES[i]:sRecall_mean[i] for i in range(CLASSES_NUMBER) })
 df_performance_params_result_file.loc["Precision mean"]= pd.Series({ CLASSES[i]:sPrecision_mean[i] for i in range(CLASSES_NUMBER) })
 df_headline_result_file.to_csv('out_general.csv')
 df_performance_params_result_file.to_csv('out_general.csv', mode='a')
-
-
-
-
-
-
-
-
-
-
-
